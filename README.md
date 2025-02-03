@@ -96,9 +96,8 @@ The figure below shows the **LSTM-based stock price prediction** for the S&P 500
 ```plaintext
 📦 HybridModel
  ┣ 📜 HybridModel_Wavelet.ipynb  # Jupyter Notebook with the full pipeline
- ┣ 📜 TEL_515_Project_Report.pdf             # Full project report
- ┣ 📜 README.md                               # Project documentation
- ┗ 📜 dataset.csv                             # (If applicable) Sample dataset
+ ┣ 📜 README.md                               
+ 
 ```
 ## 🛠️ Installation & Requirements
 To run this project, install the required dependencies:
