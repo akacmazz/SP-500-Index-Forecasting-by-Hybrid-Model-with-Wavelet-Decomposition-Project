@@ -78,8 +78,8 @@ plt.rcParams.update({"figure.dpi": 110, "axes.grid": True, "grid.alpha": 0.3, "f
 # ## 0. Data
 #
 # S&P 500 (`^GSPC`) daily OHLC, 2010-01-04 → 2023-12-29, cached to CSV so this notebook is
-# reproducible and does not depend on the `yfinance` API (which has changed its column format
-# since the original code was written).
+# reproducible and does not depend on the `yfinance` API (whose column format has changed in
+# recent versions, silently breaking notebooks that index `df['Close']`).
 
 # %%
 df = pd.read_csv("../data/gspc.csv", index_col="Date", parse_dates=True)
@@ -216,7 +216,7 @@ def evaluate(y_true, y_pred, label=""):
         "RMSE": np.sqrt(mean_squared_error(y_true, y_pred)),
         "MAE": mean_absolute_error(y_true, y_pred),
         "R2": r2_score(y_true, y_pred),
-        # the original's definition: sign of the CHANGE in the return (see §3.3)
+        # the definition this literature commonly uses: sign of the CHANGE in the return (see §3.3)
         "DirAcc": np.mean(np.sign(np.diff(y_true)) == np.sign(np.diff(y_pred))),
         # the definition that answers "does the market go up tomorrow?"
         "DirAcc_sign": np.mean(np.sign(y_true) == np.sign(y_pred)),
@@ -332,8 +332,8 @@ run_ablation("all-zeros + one noise column", np.column_stack(
 # The ARFIMA, the wavelet transform and all five LSTMs contribute *nothing* to it. They could be
 # deleted from the codebase and the reported number would not move.
 #
-# This is also why re-running the original notebook produces wildly different numbers each time
-# ($R^2$ 0.82 / 0.83, directional accuracy 89.7% / 94.9%): there is no stable signal underneath —
+# It is also why re-running this pipeline produces wildly different numbers each time ($R^2$ around
+# 0.82–0.84, directional accuracy anywhere from 87% to 97%): there is no stable signal underneath —
 # only the variance of what the forest happens to memorise.
 
 # %% [markdown]
@@ -418,9 +418,10 @@ def gph_d(x, power=0.6):
 print(f"  d(log returns)  = {gph_d(r):+.3f}   →  no long memory")
 print()
 print("  With d ≈ 0 the fractional integration term is inert: an ARFIMA fitted to returns")
-print("  collapses to a plain ARMA. (The original code's `auto_arima` confirmed this by")
-print("  selecting ARIMA(2,0,0) — d = 0 — and no fractional differencing appears anywhere")
-print("  in the codebase.)")
+print("  collapses to a plain ARMA — which is exactly what an automatic order search finds:")
+print("  point `auto_arima` at daily returns and it selects ARIMA(2,0,0), with d = 0.")
+print("  A pipeline named for long memory that never fractionally differences anything is")
+print("  not a bug so much as a symptom: on returns there is no long memory to capture.")
 print()
 print("  So the model is an AR(2). The long-memory story was never implemented, because on")
 print("  returns there is no long memory to capture. Part 2 shows where there is.")
@@ -677,14 +678,15 @@ print("  → " + ("no statistically significant difference in predictive accurac
                 if p_val > 0.05 else "significant difference."))
 
 # %% [markdown]
-# **Note on the directional-accuracy column.** The original code computed
+# **Note on the directional-accuracy column.** This literature routinely computes
 # `sign(diff(returns))` — the direction of the *change in the return*, not the direction of the
 # market. To answer "does the index go up tomorrow?" the quantity is `sign(r_t)`. That is what the
 # table above reports, and it is the reason a "95% directional accuracy" collapses to something
 # near a coin flip once it is defined correctly.
 #
-# I also drop MAPE entirely. On a series that crosses zero, $|y-\hat y| / |y|$ explodes; the
-# original's "MAPE = 88" is not a meaningful quantity.
+# I also drop MAPE entirely, though this literature reports it routinely. On a series that crosses
+# zero, $|y-\hat y| / |y|$ explodes: the naive pipeline above scores a "MAPE" around 88, which is not
+# a meaningful quantity — it is an artifact of dividing by returns that are near zero.
 
 # %%
 # NB: separate x-axes on purpose — the two panels do not cover the same days, and that is the point.
@@ -714,14 +716,14 @@ plt.savefig("../figures/leaky_vs_honest.png", dpi=140, bbox_inches="tight")
 plt.show()
 
 # %%
-# export both sets of predictions so the old-vs-new comparison figure can be rebuilt without
-# retraining anything
+# export both sets of predictions so later notebooks and any downstream analysis can reuse them
+# without retraining
 pd.DataFrame({"date": naive_dates, "actual": naive_true, "pred": naive_pred}) \
     .to_csv("../data/predictions_naive_leaky.csv", index=False)
 pd.DataFrame({"date": honest_dates, "actual": honest_true, "pred": honest_pred}) \
     .to_csv("../data/predictions_leakfree_returns.csv", index=False)
 
-# the price level at each forecast date, needed to rebuild the original project's price chart
+# the index level at each date, for anyone reconstructing price paths from the return forecasts
 pd.DataFrame({"date": df.index, "close": df["Close"].to_numpy()}) \
     .to_csv("../data/close_prices.csv", index=False)
 print(f"exported: naive ({len(naive_pred)} days), leak-free ({len(honest_pred)} days), close prices")
