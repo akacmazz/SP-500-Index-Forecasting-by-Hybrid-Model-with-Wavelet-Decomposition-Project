@@ -164,8 +164,8 @@ print(f"  d( log RV, train)  = {d_lrv_train:+.3f}   ←  estimated on TRAIN only
 print()
 print("  0 < d < 0.5  →  stationary with long memory. This is the textbook regime for realized")
 print("  volatility (Andersen, Bollerslev, Diebold & Labys, 2003) and it is precisely the regime")
-print("  ARFIMA was designed for. On returns d ≈ 0, so the fractional term was inert — which is")
-print("  why the original model silently collapsed to an AR(2).")
+print("  ARFIMA was designed for. On returns d ≈ 0, so the fractional term is inert — which is")
+print("  why the pipeline in Part 1 silently collapsed to an AR(2).")
 
 # %%
 fig, axes = plt.subplots(1, 2, figsize=(13, 3.6))
@@ -200,8 +200,9 @@ plt.show()
 # %% [markdown]
 # ## 3. A real ARFIMA — with actual fractional differencing
 #
-# The original project never implemented fractional differencing. Here it is: the binomial expansion
-# of $(1-L)^d$, truncated at $K$ lags, applied causally.
+# Part 1 established that the pipeline it dissected never actually performed fractional
+# differencing — it was an AR(2) wearing an ARFIMA's name. Here is the real thing: the binomial
+# expansion of $(1-L)^d$, truncated at $K$ lags, applied causally.
 #
 # $$(1-L)^d x_t = \sum_{k=0}^{K} \pi_k\, x_{t-k}, \qquad \pi_0 = 1,\quad \pi_k = \pi_{k-1}\,\frac{k-1-d}{k}$$
 #
@@ -744,9 +745,8 @@ print("  volatility forecast demonstrably pays for itself.")
 #
 # ### The through-line
 #
-# The original version of this project reported $R^2 = 0.83$ and 90% directional accuracy on daily
-# S&P 500 returns. Every digit was an artifact of a Random Forest fitted to its own test labels.
-# This version reports a smaller number on a target that is genuinely predictable, and tells you
-# which parts of the model deserve the credit.
+# Part 1 showed that a pipeline reporting $R^2 = 0.83$ on daily returns was reporting an artifact,
+# and that the honest answer there is zero. This notebook reports a smaller number on a target that
+# is genuinely predictable — and tells you which parts of the model deserve the credit for it.
 #
 # Smaller numbers. Real ones.
