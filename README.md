@@ -1,6 +1,6 @@
-# Hybrid ARFIMA–Wavelet–LSTM Forecasting for the S&P 500
+# Forecasting the S&P 500: A Leak-Free Evaluation of the ARFIMA–Wavelet–LSTM Hybrid
 
-### A leak-free evaluation — and where the signal actually is
+### Where the signal is, where it isn't, and why information beats architecture
 
 **Ahmet Kaçmaz**
 
@@ -8,7 +8,21 @@ This project builds the hybrid **ARFIMA + wavelet + LSTM** pipeline for S&P 500 
 architecture proposed by Bukhari et al. (*IEEE Access*, 2020) and used widely since — and evaluates
 it under one rule: **every claim has to survive an attempt to break it.**
 
-It answers the question it set out to answer. The answer is not the one the literature reports.
+> ### How to read this project
+>
+> It asks **two** questions, and the second one exists because of the answer to the first.
+>
+> **1. Can daily S&P 500 returns be forecast?** → **No.** The honest out-of-sample R² is ≈ 0. I also
+> show *why* the published results that say otherwise — including R² = 0.83 from this very pipeline —
+> are artifacts of data leakage.
+>
+> **2. Then where does this architecture belong?** → **Volatility.** Its assumptions (long memory,
+> multiscale structure) hold there and fail on returns. Pointed correctly, it forecasts with
+> **R² = 0.54** — and that number is real.
+>
+> **An R² of zero on question 1 is not a failure — it is the correct answer**, and it is what led to
+> question 2. The project forecasts, and it forecasts well; it just tells you honestly *what* is
+> forecastable and what is not.
 
 ![project summary](figures/project_summary.png)
 
@@ -278,6 +292,12 @@ meaning. Notebook 1 shows the value and explains why it is discarded rather than
 - Beck, N., Dovern, J., Vogl, S. (2025). *Mind the Naive Forecast! A Rigorous Evaluation of Forecasting Models for Time Series with Low Predictability.* Applied Intelligence 55:395. — finds no method consistently beats the naive forecast on stock prices.
 - Audrino, F., Chassot, J. (2024). *HARd to Beat: The Overlooked Impact of Rolling Windows in the Era of Machine Learning.* arXiv:2406.08041. *(working paper)* — the critique Notebook 4 answers.
 - Gu, S., Kelly, B., Xiu, D. (2020). *Empirical Asset Pricing via Machine Learning.* Review of Financial Studies 33(5):2223–2273. — where machine learning *does* beat linear models, and why: nonlinear predictor interactions, which this project's target does not have.
+
+**Independent work that reaches the same conclusions**
+
+- Izzeldin, M., Hassan, M. K., Pappas, V., Tsionas, M. (2019). *Forecasting Realised Volatility Using ARFIMA and HAR Models.* Quantitative Finance 19:1627–1638. — finds ARFIMA and HAR "essentially indistinguishable", which is what Notebook 3 measures.
+- Zhang, C., Zhang, Y., Cucuringu, M., Qian, Z. (2023). *Volatility Forecasting with Machine Learning and Intraday Commonality.* — finds linear models beat MLPs and LSTMs at the 1-day horizon, and attributes it to *"lack of training data"* — the same result and the same explanation as Notebooks 2–3. Neural networks win once many assets are pooled.
+- Kilic, R. *Linear and Nonlinear Econometric Models Against Machine Learning Models: Realized Volatility Prediction.* Federal Reserve FEDS. *(working paper)* — on S&P 500 realized volatility, ML "offers no consistent advantage over simpler, interpretable alternatives."
 
 **Volatility econometrics**
 
