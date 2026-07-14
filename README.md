@@ -1,11 +1,14 @@
-# Forecasting S&P 500 Volatility: A Leak-Free Multiscale Study
+# Hybrid ARFIMA–Wavelet–LSTM Forecasting for the S&P 500
+
+### A leak-free evaluation — and where the signal actually is
 
 **Ahmet Kaçmaz**
 
-A five-part study of volatility forecasting, built under one rule: **every claim has to survive an
-attempt to break it.** It opens by demonstrating that a widely-used forecasting recipe is silently
-leaking future information, and ends by showing that the biggest gain available comes not from a
-better model but from better information.
+This project builds the hybrid **ARFIMA + wavelet + LSTM** pipeline for S&P 500 returns — the
+architecture proposed by Bukhari et al. (*IEEE Access*, 2020) and used widely since — and evaluates
+it under one rule: **every claim has to survive an attempt to break it.**
+
+It answers the question it set out to answer. The answer is not the one the literature reports.
 
 ![leak-free vs leaky](figures/leaky_vs_honest.png)
 
@@ -13,9 +16,9 @@ better model but from better information.
 
 ## TL;DR
 
-A recipe that appears throughout the applied forecasting literature — *decompose a series with a
-wavelet transform, train one LSTM per component, combine them with a tree ensemble* — reports an
-out-of-sample **R² of 0.83** on daily S&P 500 returns.
+The pipeline — *fit ARFIMA → decompose the residuals with a db4 wavelet → train one LSTM per
+component → combine them with a Random Forest* — reports an out-of-sample **R² of 0.83** and **97%
+directional accuracy** on daily S&P 500 log returns.
 
 **That result is an artifact of data leakage, and I can prove it:** replace every LSTM output in the
 pipeline with **pure random noise** and it still reports R² ≈ 0.82. The model contributes nothing to
@@ -29,12 +32,22 @@ its own headline number.
 | reproducible with random noise | **yes** | no |
 | distinguishable from forecasting zero | — | no (DM test, *p* = 0.27) |
 
-**Daily returns are not predictable.** R² ≈ 0 is the correct answer, and any pipeline that finds a
-lot should be assumed broken until proven otherwise.
+**Daily returns are not predictable. R² ≈ 0 is the answer to the question this project asked** — and
+any pipeline that finds a lot on this target should be assumed broken until proven otherwise.
 
-But **volatility is** — and that is where this architecture always belonged. The fractional
-differencing parameter is **d ≈ −0.13 for returns** and **d ≈ +0.58 for log realized volatility**:
-long memory and multiscale structure are properties of volatility, not of returns.
+That is a result, not a dead end. It also raises the obvious follow-up: *if the architecture cannot
+work here, where can it?* So I tested its assumptions instead of assuming them.
+
+| the architecture assumes the series has… | daily returns | realized volatility |
+|---|---|---|
+| **ARFIMA** → long memory ($d \notin \{0,1\}$) | ❌ d ≈ **−0.13** | ✅ d ≈ **+0.58** |
+| **wavelet** → multiscale structure | ❌ near-white | ✅ yes |
+| **LSTM** → persistent nonlinear dependence | ❌ | ✅ |
+
+Every assumption fails on returns — which is *why* an honest pipeline finds nothing there, and why a
+leaky one has to manufacture a result. All three hold for **volatility**. The architecture was never
+wrong; it was **pointed at the wrong target**. So the second half of this project points it at the
+right one.
 
 | model (h = 1, S&P 500) | features | R² on log realized vol |
 |---|---|---|
@@ -202,9 +215,28 @@ is a defensible peer of the field-standard hand-crafted one, with a significant 
 monthly horizon where its theory predicts one, and none at the daily horizon once the benchmark is
 fitted properly — and that **the largest available gain comes from information, not architecture.**
 
+**On MAPE.** It is reported throughout this literature and I do not use it. On a series that crosses
+zero, |y − ŷ| / |y| explodes: the leaky pipeline scores a "MAPE" of ~88 on returns, a number with no
+meaning. Notebook 1 shows the value and explains why it is discarded rather than quietly omitting it.
+
 ---
 
 ## References
+
+**The architecture this project set out to evaluate**
+
+- Bukhari, A. H., Raja, M. A. Z., Sulaiman, M., Islam, S., Shoaib, M., Kumam, P. (2020). *Fractional Neuro-Sequential ARFIMA-LSTM for Financial Market Forecasting.* IEEE Access 8:71326–71338.
+- Saâdaoui, F., Rabbouch, H. (2024). *Financial forecasting improvement with LSTM-ARFIMA hybrid models and non-Gaussian distributions.* Technological Forecasting & Social Change 206:123539.
+- Tong, Z., Li, H., Zhang, Y. (2023). *A comparison of ARIMA, LSTM, XGBoost and hybrid in stock price prediction.* ICAML 2023.
+
+**Methodological critiques this project independently reproduces**
+
+- Jiang, K., Wu, C., Chen, Y. (2024). *Revisiting the Efficacy of Signal Decomposition in AI-based Time Series Prediction.* arXiv:2405.06986. *(preprint)* — documents the leak in Notebook 1 as a field-wide error.
+- Beck, N., Dovern, J., Vogl, S. (2025). *Mind the Naive Forecast! A Rigorous Evaluation of Forecasting Models for Time Series with Low Predictability.* Applied Intelligence 55:395. — finds no method consistently beats the naive forecast on stock prices.
+- Audrino, F., Chassot, J. (2024). *HARd to Beat: The Overlooked Impact of Rolling Windows in the Era of Machine Learning.* arXiv:2406.08041. *(working paper)* — the critique Notebook 4 answers.
+- Gu, S., Kelly, B., Xiu, D. (2020). *Empirical Asset Pricing via Machine Learning.* Review of Financial Studies 33(5):2223–2273. — where machine learning *does* beat linear models, and why: nonlinear predictor interactions, which this project's target does not have.
+
+**Volatility econometrics**
 
 - Corsi, F. (2009). *A Simple Approximate Long-Memory Model of Realized Volatility.* Journal of Financial Econometrics.
 - Andersen, T., Bollerslev, T., Diebold, F., Labys, P. (2003). *Modeling and Forecasting Realized Volatility.* Econometrica.
