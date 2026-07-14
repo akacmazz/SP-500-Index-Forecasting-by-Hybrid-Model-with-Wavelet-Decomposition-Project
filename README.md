@@ -10,7 +10,7 @@ it under one rule: **every claim has to survive an attempt to break it.**
 
 It answers the question it set out to answer. The answer is not the one the literature reports.
 
-![leak-free vs leaky](figures/leaky_vs_honest.png)
+![project summary](figures/project_summary.png)
 
 ---
 
@@ -23,6 +23,8 @@ directional accuracy** on daily S&P 500 log returns.
 **That result is an artifact of data leakage, and I can prove it:** replace every LSTM output in the
 pipeline with **pure random noise** and it still reports R² ≈ 0.82. The model contributes nothing to
 its own headline number.
+
+![noise ablation](figures/noise_ablation.png)
 
 | | leaky pipeline | leak-free rebuild |
 |---|---|---|
@@ -81,6 +83,8 @@ def combine_predictions(self, approx_pred, detail_preds, y_true):
 `predict()` calls this with the **test set's own targets**. The model is shown the answers,
 memorises them with a 100-tree forest, and hands them back as a forecast.
 
+![pipeline leaks](figures/pipeline_leaks.png)
+
 Three further defects compound it:
 
 1. **Only 5.7% of the test set is ever evaluated.** `pywt.wavedec` downsamples; after a level-4
@@ -110,6 +114,8 @@ series modeling."*
 - the honest result (R² ≈ 0) against zero-forecast, historical-mean, random-walk and AR(2)
   baselines, with a Diebold–Mariano test
 
+![leaky vs honest](figures/leaky_vs_honest.png)
+
 ### [`02_volatility_model.ipynb`](nb/02_volatility_model.ipynb)
 - **why volatility**: d ≈ −0.13 for returns but **+0.58** for log realized volatility
 - a **real ARFIMA** — the binomial expansion of $(1-L)^d$, verified to remove the long memory it
@@ -118,6 +124,19 @@ series modeling."*
   R² and QLIKE, averaged over **5 seeds**
 - **finding: the deep-learning stack adds nothing** over a properly specified ARFIMA (DM p = 0.63).
   On a single lucky seed it would have looked like a win; averaging over five seeds is what caught it.
+
+![returns vs volatility](figures/returns_vs_volatility.png)
+
+*The two panels are the whole argument: returns have no visible structure to exploit; volatility
+clusters, persists, and decays slowly after a shock. Same series, same days — one is forecastable.*
+
+![long memory](figures/acf_long_memory.png)
+
+*Returns decorrelate immediately. Log realized volatility is still strongly autocorrelated **100
+trading days out** — the slow, hyperbolic decay that defines long memory, and the reason ARFIMA
+finally has a job.*
+
+![volatility forecasts](figures/volatility_forecasts.png)
 
 ### [`03_multiscale_extensions.ipynb`](nb/03_multiscale_extensions.ipynb)
 - the **causal Haar à trous transform** — shift-invariant, causal *by construction*, O(T·J), exact
@@ -130,6 +149,12 @@ series modeling."*
 - six markets, one pipeline, nothing re-tuned; and one more (failed) attempt to make nonlinearity
   pay — a forest on the *same* multiscale features loses to OLS (p = 0.0001)
 
+![a trous decomposition](figures/atrous_decomposition.png)
+
+![multi-horizon](figures/multi_horizon_r2.png)
+
+![six markets](figures/multi_asset_r2.png)
+
 ### [`04_stress_test.ipynb`](nb/04_stress_test.ipynb)
 Attacks Notebook 3's own conclusion with the strongest benchmarks I can build:
 - a **fitting-scheme grid** (expanding + rolling 500/1000/1500/2000 days × refit every 1/5/22 days),
@@ -139,6 +164,8 @@ Attacks Notebook 3's own conclusion with the strongest benchmarks I can build:
 - **modern HAR extensions**: leverage and jump components, added to *both* representations
 - **outcome: the h = 1 claim dies** (p 0.026 → 0.133). **The h = 22 claim survives** (p 0.004 →
   **0.002**) — exactly where multiscale theory predicts the gain should be. Reported as such.
+
+![stress test](figures/stress_test.png)
 
 ### [`05_implied_volatility.ipynb`](nb/05_implied_volatility.ipynb)
 Gives the model the one thing no amount of architecture can provide: **forward-looking information**.
@@ -154,6 +181,21 @@ Gives the model the one thing no amount of architecture can provide: **forward-l
 - **a correction to Notebook 2**: the Sharpe improvement from volatility targeting is re-tested with
   a paired block bootstrap and found **not statistically supported** (the standard error on a Sharpe
   ratio over 2.8 years is ≈ 0.6). Withdrawn.
+
+![vix vs realized](figures/vix_vs_realized.png)
+
+*Grey is what every model in Notebooks 1–4 could see: the past. Red is what the options market
+already knew: the future. No amount of architecture closes that gap, because the gap is not
+architectural.*
+
+![implied vol gain](figures/implied_vol_gain.png)
+
+![backtest](figures/backtest_with_iv.png)
+
+*Volatility targeting does cut volatility and drawdown — that part is mechanical. But the
+constant-forecast **control** (same leverage, no timing) and a paired block bootstrap show the
+Sharpe improvement is **not statistically distinguishable from zero** on 2.8 years of test data.
+Notebook 5 withdraws the claim rather than leaving it standing.*
 
 ---
 
@@ -186,6 +228,7 @@ All five notebooks execute top-to-bottom with **zero errors** (`nbconvert --exec
 pip install -r requirements.txt
 python scripts/fetch_data.py          # caches data/*.csv (6 indices; skips files already present)
 jupyter lab nb/                       # all five notebooks run top-to-bottom
+python scripts/make_figures.py        # regenerates the summary figures from the data
 ```
 
 Notebooks 1–2 train LSTMs and take ~20–30 minutes each on CPU (no GPU required — the best model in
